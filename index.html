@@ -6,7 +6,7 @@
 		<link rel="stylesheet" type="text/css" href="https://bootswatch.com/sandstone/bootstrap.min.css">
 		<style media="screen">
 			#fb-btn{margin-top: 20px}
-			#profile,#logout{display: none}
+			#profile{display: none}
 		</style>
 	</head>
 	<body>
@@ -25,9 +25,7 @@
 				    statusChangeCallback(response.status);
 				});
 			};
-
 			/*Helper functions*/
-
 			/*Displays the elements*/
 			function display(logged){
 				/*
@@ -46,24 +44,68 @@
 					document.getElementById('heading').style.display = 'block';
 				}
 			}
-
 			/* Uses the api */
 			function api(){
-				//GET name
-				FB.api('me/?fields=name', function(response){
+				//GET personal info
+				FB.api('me/?fields=id,name', function(response){
 					//If went okay
 					if(response && !response.error){
 						console.log(response);
-						//Display name
-						displayUser(response);
+						user = response;
+						//Getting user profile pic
+						FB.api(user.id + '/picture?type=normal',function(response){
+							if(response && !response.error){
+								displayUser(user,response.data.url);		
+							}
+						});
+						
 					}
 				});
+
+				FB.api('me/feed?fields=message,story,reactions{type}', function(response){
+					//If went okay
+					if(response && !response.error){
+						buildFeed(response);
+					}
+				});	
+				
 			}
 
-			function displayUser(user){
-				var name = 
+			/* Build users feed */
+			function buildFeed(feed){
+			    var output = '<h3>Timeline</h3>';
+			        
+			    for(var i in feed.data){
+			       	var like,love,wow,angry,sad;
+			       	like = love = wow = angry = sad = 0;
+
+			       	output += `
+			        	<div class="well">
+			        	${feed.data[i].story}
+			        	<br/><br/>
+			        	${feed.data[i].message}
+			           		
+			           	</div>`;
+			   	}
+			
+			   	document.getElementById('feed').innerHTML = output;
 			}
 
+			/*Displays user name,id and profile pic*/
+			function displayUser(user,img_url){
+				console.log(img_url);
+				//HTMLing the user info
+				var user = `
+					<h3>${user.name}</h3>
+					<ul class="list-group">
+						<li class="list-group-item">
+							<img src="${img_url}"/>
+							User ID: ${user.id}
+						</li>
+					</ul>	
+						`;
+				document.getElementById('profile').innerHTML = user;
+			}
 			/*Takes actions based on the user status*/
 			function statusChangeCallback(status){
 				if(status == 'connected'){
@@ -78,21 +120,18 @@
 					display(false)
 				}
 			}
-
 			/*Logout function*/
 			function logout(){
 				FB.logout(function(response){
 					display(false);
 				});
 			}
-
 			/*When login button is pressed*/
 			function checkLoginState(){
 				FB.getLoginStatus(function(response){
 					statusChangeCallback(response.status);
 				});
 			}
-
 		    /* Loads the JavaScript SDK */
 			(function(d, s, id){
 			    var js, fjs = d.getElementsByTagName(s)[0];
