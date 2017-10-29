@@ -50,34 +50,56 @@
 				FB.api('me/?fields=id,name', function(response){
 					//If went okay
 					if(response && !response.error){
-						console.log(response);
 						user = response;
 						//Getting user profile pic
+						
 						FB.api(user.id + '/picture?type=normal',function(response){
 							if(response && !response.error){
 								displayUser(user,response.data.url);		
 							}
-						});
-						
+						});						
 					}
 				});
 
-				FB.api('me/feed?fields=message,story,reactions{type}', function(response){
+				FB.api('me/feed?fields=message,story', function(response){
 					//If went okay
 					if(response && !response.error){
-						buildFeed(response);
+						var feed = response;
+						//Getting users posts reactions
+						
+						FB.api('me/posts?fields=reactions{type}', function(response){
+							buildFeed(feed,response);
+						});
+
+						
 					}
 				});	
 				
 			}
 
 			/* Build users feed */
-			function buildFeed(feed){
-			    var output = '<h3>Timeline</h3>';
+			function buildFeed(feed,reactions){
+			    var like,love,haha,wow,angry,sad;
+			    like = love = haha = wow = angry = sad = 0;
+			       	
+			    
+				var output = '<h3>Timeline</h3>'
 			        
 			    for(var i in feed.data){
-			       	var like,love,wow,angry,sad;
-			       	like = love = wow = angry = sad = 0;
+			       	
+			       	/* Gets user posts reactions*/
+			       	for(var j in reactions.data){
+			       		if(reactions.data[j].reactions){
+			       			for(var k in reactions.data[j].reactions.data){
+			       				if(reactions.data[j].reactions.data[k].type == 'LIKE') like++;
+			       				if(reactions.data[j].reactions.data[k].type == 'LOVE') love++;
+			       				if(reactions.data[j].reactions.data[k].type == 'HAHA') haha++;
+			       				if(reactions.data[j].reactions.data[k].type == 'WOW') wow++;
+			       				if(reactions.data[j].reactions.data[k].type == 'ANGRY') angry++;
+			       				if(reactions.data[j].reactions.data[k].type == 'SAD') sad++;
+			       			}			       				
+			       		}			       		
+			       	}
 
 			       	output += `
 			        	<div class="well">
@@ -87,7 +109,15 @@
 			           		
 			           	</div>`;
 			   	}
-			
+				var reactions = `
+			    	<h3>Reactions</h3>
+			    	<div class="well">
+			        	Like:${like}  Love:${love}  Haha:${haha}  Wow:${wow}  Angry:${angry}  Sad:${sad}
+			        	</br>	
+					</div>`;
+
+				output = reactions + output;
+
 			   	document.getElementById('feed').innerHTML = output;
 			}
 
@@ -109,14 +139,11 @@
 			/*Takes actions based on the user status*/
 			function statusChangeCallback(status){
 				if(status == 'connected'){
-					console.log('Logged in and authorized');
 					display(true);
 					api();
 				}else if(status == 'not_authorized'){
-					console.log('Logged in but not authenticated');
 					display(false);
 				}else{
-					console.log('Not logged in');
 					display(false)
 				}
 			}
